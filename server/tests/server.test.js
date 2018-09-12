@@ -1,15 +1,18 @@
 const expect = require('expect');
 const mocha = require('mocha');
 const request = require('supertest');
+const {ObjectID} = require('mongodb');
 
 const {app} = require('./../server');
 const {Todo} = require('./../models/todo');
 const {User} = require('./../models/user');
 
 const initialTodos = [{
-    item : 'First todo item'
+    item : 'First todo item',
+    _id : new ObjectID()
 }, {
-    item : 'Second todo item'
+    item : 'Second todo item',
+    _id : new ObjectID
 }];
 
 beforeEach((done) => {
@@ -73,6 +76,33 @@ describe('GET /todos', () => {
             .expect((res) => {
                 expect(res.body.todos.length).toBe(2);
             })
+            .end(done);
+    });
+});
+
+describe('GET /todos/:id', () => {
+
+    it('should return a todo doc', (done) => {
+        request(app)
+            .get(`/todos/${initialTodos[0]._id.toHexString()}`)
+            .expect(200)
+            .expect((res) => {
+                expect(res.body.todo.item).toBe(initialTodos[0].item);
+            })
+            .end(done);
+    });
+
+    it('should not return 404 when todo not found', (done) => {
+        request(app)
+            .get(`/todos/${new ObjectID().toHexString()}`)
+            .expect(404)
+            .end(done);
+    });
+
+    it('should not return 404 when invalid id passed', (done) => {
+        request(app)
+            .get('/todos/123abc')
+            .expect(404)
             .end(done);
     });
 });
